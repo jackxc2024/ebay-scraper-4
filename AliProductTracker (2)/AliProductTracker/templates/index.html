@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Home - eBay Product Scraper{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Search Form -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-search me-2"></i>
+                    Start Product Search
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('start_search') }}" id="searchForm">
+                    <div class="mb-3">
+                        <label for="search_term" class="form-label">Search Term</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="search_term" 
+                               name="search_term" 
+                               placeholder="e.g., wireless headphones, laptop stand, phone case..."
+                               required>
+                        <div class="form-text">
+                            Enter keywords to search for products on eBay
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="max_pages" class="form-label">Number of Pages</label>
+                        <select class="form-select" id="max_pages" name="max_pages">
+                            <option value="1">1 page (~20 products)</option>
+                            <option value="2">2 pages (~40 products)</option>
+                            <option value="3" selected>3 pages (~60 products)</option>
+                            <option value="5">5 pages (~100 products)</option>
+                            <option value="10">10 pages (~200 products)</option>
+                        </select>
+                        <div class="form-text">
+                            More pages = more products but longer scraping time
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-play me-2"></i>
+                        Start Scraping
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Features Info -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Features
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                Extract product titles and prices
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                Get ratings and review counts
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                Collect seller information
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                Export data to CSV format
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                Rate limiting to avoid blocks
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                Real-time progress tracking
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Recent Jobs -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Recent Searches
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_jobs %}
+                    {% for job in recent_jobs %}
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ job.search_term }}</h6>
+                                <small class="text-muted">
+                                    {{ job.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                </small>
+                                <div class="mt-1">
+                                    {% if job.status == 'completed' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>
+                                            Completed
+                                        </span>
+                                        <small class="text-muted ms-2">
+                                            {{ job.products|length }} products
+                                        </small>
+                                    {% elif job.status == 'running' %}
+                                        <span class="badge bg-primary">
+                                            <i class="fas fa-spinner fa-spin me-1"></i>
+                                            Running
+                                        </span>
+                                        <small class="text-muted ms-2">
+                                            Page {{ job.current_page }}/{{ job.total_pages }}
+                                        </small>
+                                    {% elif job.status == 'failed' %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>
+                                            Failed
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-clock me-1"></i>
+                                            Pending
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="ms-3">
+                                <a href="{{ url_for('job_status', job_id=job.id) }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center py-3">
+                        <i class="fas fa-search fa-2x mb-2 d-block"></i>
+                        No recent searches
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Usage Guidelines -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Usage Guidelines
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning" role="alert">
+                    <small>
+                        <strong>Please use responsibly:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Don't overload servers with too many requests</li>
+                            <li>Respect rate limits and delays</li>
+                            <li>Use data for research purposes only</li>
+                            <li>Check robots.txt before scraping</li>
+                        </ul>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('searchForm').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Starting...';
+    submitBtn.disabled = true;
+});
+</script>
+{% endblock %}
